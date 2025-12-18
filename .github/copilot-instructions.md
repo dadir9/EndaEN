@@ -1,0 +1,24 @@
+# Henteklar Copilot Instructions
+- Platform: Expo React Native (web/iOS/Android) entry in [App.js](App.js) with `SafeAreaProvider` → `ThemeProvider` → `AuthProvider` → `AppNavigator`.
+- Run/build: `npm start` (Expo dev server), `npm run web|ios|android`, `npm run build:web` for static web export.
+- Navigation: [src/navigation/AppNavigator.js](src/navigation/AppNavigator.js) drives a custom header, language modal, dark-toggle, and role-based top tabs; parents default to MyChild while staff/admin default to Dashboard.
+- Auth: [src/context/AuthContext.js](src/context/AuthContext.js) wraps Firebase Auth + Firestore user doc; use `useAuth()` for login/register/logout/updateUserData and to read `user {id,email,name,role,phone,avatar}` plus `isAuthenticated`/`isLoading`.
+- Theming: [src/context/ThemeContext.js](src/context/ThemeContext.js) persists theme in AsyncStorage (`@henteklar_theme`), supports light/dark/system; always pull `colors` and `isDark` from `useTheme()` instead of hard-coded values.
+- Design tokens: [src/theme/colors.js](src/theme/colors.js) holds light palette and dark-mode semantic tokens; [src/theme/styles.js](src/theme/styles.js) exposes `commonStyles`, `typography`, `shadows`, and `webAnimationCSS` (auto-injected on web for fonts/animations).
+- i18n: initialized in [src/i18n](src/i18n/index.js) and used via `useTranslation`; supported language codes live in nav/login/landing components (`nb`, `en`, `ar`, `pl`, `so`, `ur`).
+- Data layer: Centralize Firestore access through [src/data/api.js](src/data/api.js); it defines collection names, timestamp helpers, and CRUD for users, children, history, calendar, check-in logs, settings. Prefer calling these helpers over inline Firestore calls.
+- RBAC patterns: Parent role uses `getChildrenForParent(email)` and sees MyChild/CheckInOut/Calendar/History/Settings; staff/admin use `getAllChildren()` and gain Dashboard plus admin tools.
+- Check-in/out: Use `checkInChild(childId, actor)` and `checkOutChild(childId, actor)` from the API; screens expect these to update Firestore and timestamps.
+- Settings admin: [src/screens/SettingsScreen.js](src/screens/SettingsScreen.js) lets admins manage users via `getAllUsers`, `createUser`, `updateUser`, `deleteUser`, `deleteAllData`; password changes validated by `validatePasswordStrength` and executed with `changePassword`.
+- Dashboard: [src/screens/DashboardScreen.js](src/screens/DashboardScreen.js) loads children + settings; respects role-based child fetching; stats and list rely on `isCheckedIn`, `checkedInAt/checkedOutAt`.
+- Parent view: [src/screens/MyChildScreen.js](src/screens/MyChildScreen.js) focuses on the current parent’s children with quick check-in/out actions and contact shortcuts; honors `MIN_TOUCH_TARGET` for accessibility.
+- Landing/Login: [src/screens/LandingScreen.js](src/screens/LandingScreen.js) and [src/screens/LoginScreen.js](src/screens/LoginScreen.js) share language selection UX; login calls `useAuth().login` and shows API error messages without navigation (onAuthStateChanged handles routing).
+- Components: Reuse UI from [src/components](src/components/index.js) (Avatar, Badge, Button, Card, Input, Skeleton) before adding new primitives.
+- Styles: Prefer `StyleSheet.create` with theme tokens; web uses injected `webAnimationCSS` and hover classes like `hover-lift`.
+- Accessibility: Large screens and web use hover/focus states; keep touch targets ≥44px (`MIN_TOUCH_TARGET` constants in nav/MyChild) and preserve `accessibilityRole/State/Label` patterns used in headers and cards.
+- Data shapes: Children include `parents` array with `parentIds/primaryParentId`, `group`, `age`, `isCheckedIn`, timestamps; users include `role` (`admin|staff|parent`) and `avatar` initials derived from name.
+- Firestore config: lives in [src/config/firebase.js](src/config/firebase.js); use exported `db` and `auth` rather than creating new app instances.
+- Error handling: API helpers return arrays/objects or throw; login returns `{success, error}` for UI messaging—mirror this pattern in new auth-related calls.
+- Testing/storybook: none present; rely on running screens via Expo. Keep new logic deterministic and easy to exercise from existing screens.
+- File naming: screens/components capitalize; hooks/context use camelCase. Keep assets under /assets and reuse theme/i18n hooks instead of global singletons.
+- When adding features, wire navigation through AppNavigator (stack routes plus header tabs) and gate parent-only/admin-only views via `user.role` consistently with existing checks.

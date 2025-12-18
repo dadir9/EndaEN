@@ -10,6 +10,7 @@ import {
   Alert,
   Switch,
   Linking,
+  Image,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -114,6 +115,7 @@ const SettingsScreen = ({ navigation }) => {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [showOrgModal, setShowOrgModal] = useState(false);
   
   // Form states
   const [editName, setEditName] = useState(user?.name || '');
@@ -129,6 +131,15 @@ const SettingsScreen = ({ navigation }) => {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPhone, setNewUserPhone] = useState('');
   const [newUserRole, setNewUserRole] = useState('staff');
+  const [orgName, setOrgName] = useState('Henteklar Barnehage');
+  const [orgEmail, setOrgEmail] = useState('kontakt@henteklar.no');
+  const [orgPhone, setOrgPhone] = useState('+47 99 99 99 99');
+  const [orgAddress, setOrgAddress] = useState('Eksempelgata 12, 1234 Oslo');
+  const [openFrom, setOpenFrom] = useState('07:00');
+  const [openTo, setOpenTo] = useState('17:00');
+  const [pickupDeadline, setPickupDeadline] = useState('16:30');
+  const [logoUrl, setLogoUrl] = useState('https://example.com/logo.png');
+  const [orgSummary, setOrgSummary] = useState('Logo, åpningstider, kontaktinfo');
   
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -291,6 +302,17 @@ const SettingsScreen = ({ navigation }) => {
     );
   };
 
+  const handleSaveOrgSettings = () => {
+    if (!orgName.trim()) {
+      Alert.alert('Feil', 'Navn er påkrevd');
+      return;
+    }
+
+    setOrgSummary(`${openFrom}-${openTo} · ${orgPhone || orgEmail}`);
+    Alert.alert('Lagret', 'Barnehageinnstillingene er oppdatert');
+    setShowOrgModal(false);
+  };
+
   const handleContactParent = (method, value) => {
     if (method === 'email') {
       Linking.openURL(`mailto:${value}`);
@@ -438,8 +460,8 @@ const SettingsScreen = ({ navigation }) => {
         {
           icon: 'business-outline',
           label: 'Barnehageinnstillinger',
-          description: 'Logo, åpningstider, kontaktinfo',
-          action: () => {},
+          description: orgSummary,
+          action: () => setShowOrgModal(true),
         },
       ],
     });
@@ -481,7 +503,7 @@ const SettingsScreen = ({ navigation }) => {
         </Card>
 
         {/* Settings Sections */}
-        {settingsSections.map((section) => (
+       {settingsSections.map((section) => (
           <Card key={section.title} style={[styles.sectionCard, { backgroundColor: themedColors.card }]} padding={false}>
             <View style={[styles.sectionHeader, { borderBottomColor: themedColors.border }]}>
               <Text style={[styles.sectionTitle, { color: themedColors.text }]}>{section.title}</Text>
@@ -496,11 +518,20 @@ const SettingsScreen = ({ navigation }) => {
                 onPress={item.action}
               >
                 <View style={styles.settingItemContent}>
-                  <View style={[styles.settingIconContainer, { backgroundColor: themedColors.neutral[100] }]}>
+                  <View
+                    style={[
+                      styles.settingIconContainer,
+                      {
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(59,130,246,0.08)',
+                        borderColor: isDark ? themedColors.border : themedColors.neutral[200],
+                        borderWidth: 1,
+                      },
+                    ]}
+                  >
                     <Ionicons
                       name={item.icon}
                       size={20}
-                      color={themedColors.neutral[600]}
+                      color={isDark ? themedColors.neutral[600] : themedColors.neutral[500]}
                     />
                   </View>
                   <View style={styles.settingInfo}>
@@ -515,14 +546,207 @@ const SettingsScreen = ({ navigation }) => {
                   <Ionicons
                     name="chevron-forward"
                     size={20}
-                    color={themedColors.neutral[300]}
+                    color={isDark ? themedColors.neutral[400] : themedColors.neutral[300]}
                   />
                 )}
               </TouchableOpacity>
             ))}
           </Card>
-        ))}
+      ))}
 
+      {/* Barnehageinnstillinger */}
+      <Modal
+        visible={showOrgModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowOrgModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowOrgModal(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: themedColors.card,
+                borderColor: themedColors.border,
+                borderTopWidth: 1,
+              },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: themedColors.text }]}>
+                Barnehageinnstillinger
+              </Text>
+              <TouchableOpacity onPress={() => setShowOrgModal(false)}>
+                <Ionicons name="close" size={22} color={themedColors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={{ gap: 12 }}>
+                <Text style={[styles.inputLabel, { color: themedColors.text }]}>Navn</Text>
+                <TextInput
+                  value={orgName}
+                  onChangeText={setOrgName}
+                  placeholder="Barnehagens navn"
+                  placeholderTextColor={themedColors.textSecondary}
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: themedColors.border,
+                      backgroundColor: themedColors.card,
+                      color: themedColors.text,
+                    },
+                  ]}
+                />
+
+                <Text style={[styles.inputLabel, { color: themedColors.text }]}>E-post</Text>
+                <TextInput
+                  value={orgEmail}
+                  onChangeText={setOrgEmail}
+                  placeholder="post@barnehage.no"
+                  placeholderTextColor={themedColors.textSecondary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: themedColors.border,
+                      backgroundColor: themedColors.card,
+                      color: themedColors.text,
+                    },
+                  ]}
+                />
+
+                <Text style={[styles.inputLabel, { color: themedColors.text }]}>Telefon</Text>
+                <TextInput
+                  value={orgPhone}
+                  onChangeText={setOrgPhone}
+                  placeholder="+47 12 34 56 78"
+                  placeholderTextColor={themedColors.textSecondary}
+                  keyboardType="phone-pad"
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: themedColors.border,
+                      backgroundColor: themedColors.card,
+                      color: themedColors.text,
+                    },
+                  ]}
+                />
+
+                <Text style={[styles.inputLabel, { color: themedColors.text }]}>Adresse</Text>
+                <TextInput
+                  value={orgAddress}
+                  onChangeText={setOrgAddress}
+                  placeholder="Adresse"
+                  placeholderTextColor={themedColors.textSecondary}
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: themedColors.border,
+                      backgroundColor: themedColors.card,
+                      color: themedColors.text,
+                    },
+                  ]}
+                />
+
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.inputLabel, { color: themedColors.text }]}>Åpner</Text>
+                    <TextInput
+                      value={openFrom}
+                      onChangeText={setOpenFrom}
+                      placeholder="07:00"
+                      placeholderTextColor={themedColors.textSecondary}
+                      style={[
+                        styles.input,
+                        {
+                          borderColor: themedColors.border,
+                          backgroundColor: themedColors.card,
+                          color: themedColors.text,
+                        },
+                      ]}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.inputLabel, { color: themedColors.text }]}>Stenger</Text>
+                    <TextInput
+                      value={openTo}
+                      onChangeText={setOpenTo}
+                      placeholder="17:00"
+                      placeholderTextColor={themedColors.textSecondary}
+                      style={[
+                        styles.input,
+                        {
+                          borderColor: themedColors.border,
+                          backgroundColor: themedColors.card,
+                          color: themedColors.text,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+
+                <Text style={[styles.inputLabel, { color: themedColors.text }]}>Hentefrist</Text>
+                <TextInput
+                  value={pickupDeadline}
+                  onChangeText={setPickupDeadline}
+                  placeholder="16:30"
+                  placeholderTextColor={themedColors.textSecondary}
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: themedColors.border,
+                      backgroundColor: themedColors.card,
+                      color: themedColors.text,
+                    },
+                  ]}
+                />
+
+                <Text style={[styles.inputLabel, { color: themedColors.text }]}>Logo-URL</Text>
+                <TextInput
+                  value={logoUrl}
+                  onChangeText={setLogoUrl}
+                  placeholder="https://..."
+                  placeholderTextColor={themedColors.textSecondary}
+                  autoCapitalize="none"
+                  style={[
+                    styles.input,
+                    {
+                      borderColor: themedColors.border,
+                      backgroundColor: themedColors.card,
+                      color: themedColors.text,
+                    },
+                  ]}
+                />
+                {logoUrl ? (
+                  <View style={styles.logoPreview}>
+                    <Image
+                      source={{ uri: logoUrl }}
+                      style={styles.logoImage}
+                      resizeMode="contain"
+                      onError={() => setLogoUrl('')}
+                    />
+                  </View>
+                ) : null}
+
+                <TouchableOpacity
+                  style={[styles.saveButton, { backgroundColor: themedColors.primary[600] }]}
+                  onPress={handleSaveOrgSettings}
+                >
+                  <Text style={styles.saveButtonText}>Lagre</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
         {/* Danger Zone */}
         <Card style={[styles.dangerCard, { backgroundColor: themedColors.card }]}>
           <Text style={[styles.dangerTitle, { color: themedColors.red[600] }]}>Faresone</Text>
@@ -1183,6 +1407,19 @@ const styles = StyleSheet.create({
   },
   languageNameActive: {
     fontWeight: '600',
+  },
+  logoPreview: {
+    marginTop: 4,
+    marginBottom: 8,
+    alignItems: 'flex-start',
+  },
+  logoImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: defaultColors.border || '#E5E5E5',
+    backgroundColor: '#FFFFFF',
   },
 });
 

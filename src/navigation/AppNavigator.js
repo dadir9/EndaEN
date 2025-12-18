@@ -1,11 +1,5 @@
-/**
- * @fileoverview Hovednavigasjon for Henteklar-appen
- * Håndterer autentisering, rollebasert navigasjon og tilgjengelighet
- * @module navigation/AppNavigator
- */
-
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions, AccessibilityInfo, ScrollView, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView, Modal } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
@@ -36,7 +30,7 @@ const Stack = createNativeStackNavigator();
 const { width } = Dimensions.get('window');
 const isLargeScreen = width > 900;
 
-/** Minimum touch target størrelse for tilgjengelighet (44x44px per WCAG) */
+// Minimum touch target for accessibility (44x44px per WCAG)
 const MIN_TOUCH_TARGET = 44;
 
 // Language options
@@ -249,7 +243,7 @@ const CustomHeader = ({ navigation, currentRoute }) => {
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel={t('settings.language') || 'Språk'}
-            accessibilityHint="Trykk for ヂ velge sprЦk"
+            accessibilityHint="Trykk for å velge språk"
           >
             <FlagIcon countryCode={currentLanguage.countryCode} size={20} />
             {isLargeScreen && (
@@ -650,7 +644,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 14,
-    paddingVertical: 12, // Økt for touch target
+    paddingVertical: 12, // Increased touch target
     borderRadius: 12,
     borderWidth: 1,
     minWidth: MIN_TOUCH_TARGET,

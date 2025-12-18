@@ -87,10 +87,10 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log('✅ Innlogging vellykket:', email);
+      console.log('Innlogging vellykket:', email);
       return { success: true };
     } catch (error) {
-      console.error('❌ Feil ved innlogging:', error.code, error.message);
+      console.error('Feil ved innlogging:', error.code, error.message);
       
       // Returner spesifikk feilmelding basert på feilkode
       let errorMessage = 'Feil ved innlogging. Prøv igjen.';
