@@ -374,7 +374,9 @@ const LoginScreen = ({ navigation }) => {
         { 
           backgroundColor: cardBg,
           opacity: fadeAnim, 
-          transform: [{ translateY: slideAnim }] 
+          transform: [{ translateY: slideAnim }],
+          padding: isSmallScreen ? 20 : 32,
+          borderRadius: isSmallScreen ? 20 : 28,
         }
       ]}
     >
@@ -519,7 +521,7 @@ const LoginScreen = ({ navigation }) => {
         <View style={[styles.dividerLine, { backgroundColor: isDark ? colors.neutral[700] : colors.neutral[200] }]} />
       </View>
 
-      <View style={styles.socialButtons}>
+      <View style={[styles.socialButtons, isSmallScreen && styles.socialButtonsStacked]}>
         <TouchableOpacity
           style={[
             styles.socialButton,
@@ -539,6 +541,7 @@ const LoginScreen = ({ navigation }) => {
             styles.socialButton,
             { borderColor: isDark ? colors.neutral[600] : colors.neutral[200], backgroundColor: cardBg },
             socialLoading === 'google' && styles.socialButtonDisabled,
+            isSmallScreen && styles.socialButtonFull,
           ]}
           onPress={() => handleSocialLogin('google')}
           disabled={!!socialLoading}
@@ -896,7 +899,7 @@ const styles = StyleSheet.create({
   // Mobile layout
   mobileContainer: {
     flexGrow: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
   },
   mobileContent: {
     flex: 1,
@@ -1091,6 +1094,9 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 24,
   },
+  socialButtonsStacked: {
+    flexDirection: 'column',
+  },
   socialButton: {
     flex: 1,
     flexDirection: 'row',
@@ -1107,6 +1113,9 @@ const styles = StyleSheet.create({
   },
   socialButtonDisabled: {
     opacity: 0.7,
+  },
+  socialButtonFull: {
+    width: '100%',
   },
   helpSection: {
     flexDirection: 'row',
