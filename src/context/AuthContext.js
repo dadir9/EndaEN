@@ -4,7 +4,10 @@ import {
   signOut, 
   onAuthStateChanged,
   createUserWithEmailAndPassword,
-  updateProfile 
+  updateProfile,
+  signInWithPopup,
+  GoogleAuthProvider,
+  OAuthProvider,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -120,6 +123,50 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const loginWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, provider);
+      return { success: true };
+    } catch (error) {
+      console.error('Feil ved Google-innlogging:', error);
+      let errorMessage = 'Kunne ikke logge inn med Google.';
+      switch (error.code) {
+        case 'auth/popup-closed-by-user':
+        case 'auth/cancelled-popup-request':
+          errorMessage = 'Innlogging avbrutt.';
+          break;
+        case 'auth/account-exists-with-different-credential':
+          errorMessage = 'E-post er allerede knyttet til en annen innlogging.';
+          break;
+      }
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const loginWithMicrosoft = async () => {
+    try {
+      const provider = new OAuthProvider('microsoft.com');
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, provider);
+      return { success: true };
+    } catch (error) {
+      console.error('Feil ved Microsoft-innlogging:', error);
+      let errorMessage = 'Kunne ikke logge inn med Microsoft.';
+      switch (error.code) {
+        case 'auth/popup-closed-by-user':
+        case 'auth/cancelled-popup-request':
+          errorMessage = 'Innlogging avbrutt.';
+          break;
+        case 'auth/account-exists-with-different-credential':
+          errorMessage = 'E-post er allerede knyttet til en annen innlogging.';
+          break;
+      }
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const register = async (email, password, name) => {
     setIsLoading(true);
     try {
@@ -196,6 +243,8 @@ export function AuthProvider({ children }) {
     isLoading,
     isAuthenticated: !!user,
     login,
+    loginWithGoogle,
+    loginWithMicrosoft,
     logout,
     register,
     updateUserData,

@@ -27,6 +27,8 @@ import {
   createUser,
   getAllUsers,
   validatePasswordStrength,
+  getSettings,
+  updateSettings,
 } from '../data/api';
 
 // SVG Flag components
@@ -116,6 +118,8 @@ const SettingsScreen = ({ navigation }) => {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showOrgModal, setShowOrgModal] = useState(false);
+  const [orgLoading, setOrgLoading] = useState(false);
+  const [orgSaving, setOrgSaving] = useState(false);
   
   // Form states
   const [editName, setEditName] = useState(user?.name || '');
@@ -140,6 +144,7 @@ const SettingsScreen = ({ navigation }) => {
   const [pickupDeadline, setPickupDeadline] = useState('16:30');
   const [logoUrl, setLogoUrl] = useState('https://example.com/logo.png');
   const [orgSummary, setOrgSummary] = useState('Logo, åpningstider, kontaktinfo');
+  const [orgBaseline, setOrgBaseline] = useState(null);
   
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -161,6 +166,51 @@ const SettingsScreen = ({ navigation }) => {
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const buildOrgSummary = (open, close, phone, email) => {
+    const hours = open && close ? `${open}-${close}` : 'Åpningstider';
+    const contact = phone || email || '';
+    return contact ? `${hours} · ${contact}` : hours;
+  };
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      loadOrgSettings();
+    }
+  }, [user?.role]);
+
+  const applyOrgState = (data) => {
+    setOrgName(data.kindergartenName || orgName);
+    setOrgEmail(data.email || orgEmail);
+    setOrgPhone(data.phone || orgPhone);
+    setOrgAddress(data.address || orgAddress);
+    setOpenFrom(data.openingHours?.open || openFrom);
+    setOpenTo(data.openingHours?.close || openTo);
+    setPickupDeadline(data.pickupDeadline || pickupDeadline);
+    setLogoUrl(data.kindergartenLogo || logoUrl);
+    setOrgSummary(buildOrgSummary(
+      data.openingHours?.open || openFrom,
+      data.openingHours?.close || openTo,
+      data.phone || orgPhone,
+      data.email || orgEmail,
+    ));
+  };
+
+  const loadOrgSettings = async () => {
+    setOrgLoading(true);
+    try {
+      const data = await getSettings();
+      if (data) {
+        applyOrgState(data);
+        setOrgBaseline(data);
+      }
+    } catch (error) {
+      console.error('Feil ved lasting av barnehageinnstillinger:', error);
+      Alert.alert('Feil', 'Kunne ikke laste barnehageinnstillinger.');
+    } finally {
+      setOrgLoading(false);
+    }
   };
 
   const handleLanguageChange = (langCode) => {
@@ -308,9 +358,37 @@ const SettingsScreen = ({ navigation }) => {
       return;
     }
 
-    setOrgSummary(`${openFrom}-${openTo} · ${orgPhone || orgEmail}`);
-    Alert.alert('Lagret', 'Barnehageinnstillingene er oppdatert');
-    setShowOrgModal(false);
+    setOrgSaving(true);
+    updateSettings({
+      kindergartenName: orgName,
+      email: orgEmail,
+      phone: orgPhone,
+      address: orgAddress,
+      kindergartenLogo: logoUrl || null,
+      openingHours: {
+        open: openFrom,
+        close: openTo,
+      },
+      pickupDeadline,
+    }).then((saved) => {
+      applyOrgState(saved || {});
+      setOrgBaseline(saved || null);
+      Alert.alert('Lagret', 'Barnehageinnstillingene er oppdatert');
+      setShowOrgModal(false);
+    }).catch((error) => {
+      console.error('Feil ved lagring av barnehageinnstillinger:', error);
+      Alert.alert('Feil', 'Kunne ikke lagre barnehageinnstillinger');
+    }).finally(() => {
+      setOrgSaving(false);
+    });
+  };
+
+  const handleRestartOrgSettings = () => {
+    if (orgBaseline) {
+      applyOrgState(orgBaseline);
+    } else {
+      loadOrgSettings();
+    }
   };
 
   const handleContactParent = (method, value) => {
@@ -582,12 +660,36 @@ const SettingsScreen = ({ navigation }) => {
               <Text style={[styles.modalTitle, { color: themedColors.text }]}>
                 Barnehageinnstillinger
               </Text>
-              <TouchableOpacity onPress={() => setShowOrgModal(false)}>
-                <Ionicons name="close" size={22} color={themedColors.textSecondary} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <TouchableOpacity
+                  style={styles.restartButton}
+                  onPress={handleRestartOrgSettings}
+                  disabled={orgLoading || orgSaving}
+                >
+                  <Ionicons
+                    name="refresh"
+                    size={18}
+                    color={orgLoading || orgSaving ? themedColors.neutral[400] : themedColors.primary[600]}
+                  />
+                  <Text style={[
+                    styles.restartText,
+                    { color: orgLoading || orgSaving ? themedColors.neutral[400] : themedColors.primary[600] },
+                  ]}>
+                    Restart
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowOrgModal(false)}>
+                  <Ionicons name="close" size={22} color={themedColors.textSecondary} />
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            {orgLoading ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <Text style={{ color: themedColors.textSecondary }}>Laster...</Text>
+              </View>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ gap: 12 }}>
                 <Text style={[styles.inputLabel, { color: themedColors.text }]}>Navn</Text>
                 <TextInput
@@ -737,13 +839,20 @@ const SettingsScreen = ({ navigation }) => {
                 ) : null}
 
                 <TouchableOpacity
-                  style={[styles.saveButton, { backgroundColor: themedColors.primary[600] }]}
+                  style={[
+                    styles.saveButton,
+                    { backgroundColor: orgSaving ? themedColors.neutral[400] : themedColors.primary[600] },
+                  ]}
                   onPress={handleSaveOrgSettings}
+                  disabled={orgSaving}
                 >
-                  <Text style={styles.saveButtonText}>Lagre</Text>
+                  <Text style={styles.saveButtonText}>
+                    {orgSaving ? 'Lagrer...' : 'Lagre'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
+            )}
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
@@ -1420,6 +1529,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: defaultColors.border || '#E5E5E5',
     backgroundColor: '#FFFFFF',
+  },
+  restartButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: defaultColors.neutral[200],
+    backgroundColor: defaultColors.white,
+  },
+  restartText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
 

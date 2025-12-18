@@ -186,7 +186,7 @@ const FloatingBubble = ({ size, initialX, initialY, duration, delay, screenWidth
 
 const LoginScreen = ({ navigation }) => {
   const { t, i18n } = useTranslation();
-  const { login } = useAuth();
+  const { login, loginWithGoogle, loginWithMicrosoft } = useAuth();
   const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
   
@@ -203,6 +203,7 @@ const LoginScreen = ({ navigation }) => {
   const [focused, setFocused] = useState(null);
   const [rememberMe, setRememberMe] = useState(true);
   const [loginLoading, setLoginLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(null);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   
   // Forgot password state
@@ -247,6 +248,22 @@ const LoginScreen = ({ navigation }) => {
       setLoginLoading(false);
     }
     // Ved suksess vil onAuthStateChanged håndtere navigasjonen
+  };
+
+  const handleSocialLogin = async (provider) => {
+    if (socialLoading) return;
+    setError('');
+    setSocialLoading(provider);
+    try {
+      const result = provider === 'google' ? await loginWithGoogle() : await loginWithMicrosoft();
+      if (!result.success) {
+        setError(result.error || t('loginPage.loginError'));
+      }
+    } catch (err) {
+      setError(t('loginPage.loginError'));
+    } finally {
+      setSocialLoading(null);
+    }
   };
 
   const handleForgotPassword = async () => {
@@ -503,13 +520,33 @@ const LoginScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.socialButtons}>
-        <TouchableOpacity style={[styles.socialButton, { borderColor: isDark ? colors.neutral[600] : colors.neutral[200], backgroundColor: cardBg }]}>
+        <TouchableOpacity
+          style={[
+            styles.socialButton,
+            { borderColor: isDark ? colors.neutral[600] : colors.neutral[200], backgroundColor: cardBg },
+            socialLoading === 'microsoft' && styles.socialButtonDisabled,
+          ]}
+          onPress={() => handleSocialLogin('microsoft')}
+          disabled={!!socialLoading}
+        >
           <Ionicons name="logo-microsoft" size={20} color="#00A4EF" />
-          <Text style={[styles.socialButtonText, { color: textColor }]}>Microsoft</Text>
+          <Text style={[styles.socialButtonText, { color: textColor }]}>
+            {socialLoading === 'microsoft' ? t('loginPage.loading') || 'Laster...' : 'Microsoft'}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.socialButton, { borderColor: isDark ? colors.neutral[600] : colors.neutral[200], backgroundColor: cardBg }]}>
+        <TouchableOpacity
+          style={[
+            styles.socialButton,
+            { borderColor: isDark ? colors.neutral[600] : colors.neutral[200], backgroundColor: cardBg },
+            socialLoading === 'google' && styles.socialButtonDisabled,
+          ]}
+          onPress={() => handleSocialLogin('google')}
+          disabled={!!socialLoading}
+        >
           <Ionicons name="logo-google" size={20} color="#DB4437" />
-          <Text style={[styles.socialButtonText, { color: textColor }]}>Google</Text>
+          <Text style={[styles.socialButtonText, { color: textColor }]}>
+            {socialLoading === 'google' ? t('loginPage.loading') || 'Laster...' : 'Google'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -1067,6 +1104,9 @@ const styles = StyleSheet.create({
   socialButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  socialButtonDisabled: {
+    opacity: 0.7,
   },
   helpSection: {
     flexDirection: 'row',
